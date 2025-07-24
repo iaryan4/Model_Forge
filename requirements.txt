@@ -1,0 +1,12 @@
+streamlit
+pandas
+numpy
+seaborn
+matplotlib
+ipykernel
+# # -e . 
+# '''You're telling Python:
+
+# “Install this project's code as a live reference, not a copied version.”
+
+# So if you change the source code later, you don’t have to reinstall the package — the changes apply instantly.'''
