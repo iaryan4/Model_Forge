@@ -58,13 +58,21 @@ class DataAfterEDA:
     def get_df_info(self):
                 # EDA
 
-        df = pd.read_csv(os.path.join('artifact','train.csv'))
-
+        df_train = pd.read_csv(os.path.join('artifact','train.csv'))
+        df_test = pd.read_csv(os.path.join('artifact','test.csv'))
+        
         # Drop name-like columns by default
-        df = drop_name_like_columns(df)
+        df_train = drop_name_like_columns(df_train)
+        df_test = drop_name_like_columns(df_test)
 
-        return df
-    
+        return df_train,df_test
+
+
+    def update_data_after_EDA(self):
+        df_train,df_test = self.get_df_info()
+        df_train.to_csv(os.path.join('artifact','train.csv'))
+        df_test.to_csv(os.path.join('artifact','test.csv'))
+        
 class DataTransformation:
     def __init__(self):
         self.data_transformation_config=DataTransformationConfig()
@@ -74,12 +82,13 @@ class DataTransformation:
         This function si responsible for data trnasformation
         
         '''
-        df = DataAfterEDA().get_df_info()
+        df_train,df_test = DataAfterEDA().get_df_info()
+        
         target = DataAfterEDA().get_target()
 
         # Numerical columns & Categorical Columns :
-        numerical_columns = df.select_dtypes(include=['int64', 'float64']).columns.tolist()
-        categorical_columns = df.select_dtypes(include=['object', 'category', 'bool']).columns.tolist()
+        numerical_columns = df_train.select_dtypes(include=['int64', 'float64']).columns.tolist()
+        categorical_columns = df_train.select_dtypes(include=['object', 'category', 'bool']).columns.tolist()
         if target in numerical_columns:
             numerical_columns.remove(target)
         elif target in categorical_columns:
@@ -117,12 +126,12 @@ class DataTransformation:
     def initiate_data_transformation(self,train_path,test_path):
 
             target = DataAfterEDA().get_target()
-
+            DataAfterEDA().update_data_after_EDA()
             train_df=pd.read_csv(train_path)
             test_df=pd.read_csv(test_path)
 
-            # print("Train Data Columns:", train_df.columns.tolist())
-            # print("Test Data Columns:", test_df.columns.tolist())
+            print("Train Data Columns:", train_df.columns.tolist())
+            print("Test Data Columns:", test_df.columns.tolist())
             preprocessing_obj=self.get_data_transformer_object()
 
             target_column_name= target
