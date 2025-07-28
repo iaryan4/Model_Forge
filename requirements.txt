@@ -4,6 +4,10 @@ numpy
 seaborn
 matplotlib
 ipykernel
+dill
+catboost
+streamlit-lottie
+
 # # -e . 
 # '''You're telling Python:
 

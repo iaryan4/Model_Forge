@@ -10,9 +10,23 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
 from dataclasses import dataclass
+import warnings
+warnings.filterwarnings("ignore")
 
-from src.utils import save_object
 
+from src.utils import save_object,get_ex_df
+
+def remove_columns_with_many_nans(df, threshold=0.5):
+
+    # Calculate the proportion of non-NaN values per column
+    non_nan_ratio = df.notna().mean()
+    
+    # Keep only columns with non-NaN ratio greater than or equal to the threshold
+    df_cleaned = df.loc[:, non_nan_ratio >= (1 - threshold)]
+    if 'Unnamed: 0' in df_cleaned.columns :
+        df_cleaned = df_cleaned.drop(columns=['Unnamed: 0'], errors='ignore')
+
+    return df_cleaned
 # NAME REMOVAL
 def drop_name_like_columns(df):
     import re
@@ -21,11 +35,10 @@ def drop_name_like_columns(df):
     name_like_keywords = [
         "name", "person", "customer", "client", "user", "username",
         "firstname", "lastname", "full_name", "fullname", "contact_name",
-        "passenger", "owner", "author"
+        "passenger", "owner", "author","id","passengerid"
     ]
 
     cols_to_drop = []
-
     for col in df.columns:
         col_lower = col.lower()
         # Match column names that include any of the name-like keywords
@@ -34,7 +47,8 @@ def drop_name_like_columns(df):
         # OR: if high-cardinality object column, assume identifier-like
         elif df[col].dtype == 'object' and df[col].nunique() > 100:
             cols_to_drop.append(col)
-
+    # Drop nan values more than 50 % columns 
+    df = remove_columns_with_many_nans(df)
     # Drop safely
     return df.drop(columns=cols_to_drop, errors='ignore')
 
@@ -45,7 +59,7 @@ def drop_name_like_columns(df):
 
 @dataclass
 class DataTransformationConfig:
-    preprocessor_obj_file_path=os.path.join('artifact',"proprocessor.pkl")
+    preprocessor_obj_file_path=os.path.join('artifact',"preprocessor.pkl")
 
 class DataAfterEDA:
     def __init__(self):
@@ -53,7 +67,9 @@ class DataAfterEDA:
     def get_target(self):
         target = ''
         with open (os.path.join('artifact','target.txt'),'r') as fp :
-            target = fp.read()
+            targets = fp.readlines()
+        targets = [t.strip() for t in targets]
+        target = targets[0]
         return target
     def get_df_info(self):
                 # EDA
@@ -64,14 +80,14 @@ class DataAfterEDA:
         # Drop name-like columns by default
         df_train = drop_name_like_columns(df_train)
         df_test = drop_name_like_columns(df_test)
-
+        df_test = df_test[df_train.columns]  
         return df_train,df_test
 
 
     def update_data_after_EDA(self):
         df_train,df_test = self.get_df_info()
-        df_train.to_csv(os.path.join('artifact','train.csv'))
-        df_test.to_csv(os.path.join('artifact','test.csv'))
+        df_train.to_csv(os.path.join('artifact','train.csv'),index=False)
+        df_test.to_csv(os.path.join('artifact','test.csv'),index=False)
         
 class DataTransformation:
     def __init__(self):
@@ -79,7 +95,7 @@ class DataTransformation:
         
     def get_data_transformer_object(self):
         '''
-        This function si responsible for data trnasformation
+        This function is responsible for data trnasformation
         
         '''
         df_train,df_test = DataAfterEDA().get_df_info()
@@ -126,8 +142,9 @@ class DataTransformation:
     def initiate_data_transformation(self,train_path,test_path):
 
             target = DataAfterEDA().get_target()
-            DataAfterEDA().update_data_after_EDA()
-            train_df=pd.read_csv(train_path)
+            
+            DataAfterEDA().update_data_after_EDA() #  This will update the csv data files according to the changes like columns etc
+            train_df=pd.read_csv(train_path)# Then the changes will be stored int this
             test_df=pd.read_csv(test_path)
 
             print("Train Data Columns:", train_df.columns.tolist())
@@ -167,7 +184,7 @@ class DataTransformation:
                 test_arr,
                 self.data_transformation_config.preprocessor_obj_file_path,
             )
-    
+     
 
 if __name__ == '__main__':
     pass
