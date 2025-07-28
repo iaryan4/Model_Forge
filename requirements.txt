@@ -7,7 +7,9 @@ ipykernel
 dill
 catboost
 streamlit-lottie
-
+scikit-learn
+dataclasses
+xgboost
 # # -e . 
 # '''You're telling Python:
 
